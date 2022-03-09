@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">My FootPrinter Service</string>
+    <string name="title_activity_main">FootPrinter Service</string>
+
+    <!-- Preference Titles -->
+    <string name="service_time_setting">서비스 시간 설정</string>
+    <string name="service_except_setting">서비스 제외 설정</string>
+    <string name="location_setting">위치 설정</string>
+    <string name="service_control">서비스 시작 제어</string>
+
+    <!-- Time Preferences -->
+    <string name="service_start_time">시작 시간</string>
+    <string name="service_time_gap">시작 간격</string>
+    <string name="service_except_start_time">제외 시간</string>
+    <string name="service_except_time_gap">제외 간격</string>
+    <string name="service_except_day_gap">제외 요일</string>
+    <string name="service_except_no_day_gap">설정되지 않음</string>
+    <string name="reply_title">Default reply action</string>
+
+    <!-- Location Preferences -->
+    <string name="store_nearby_location">이전위치에서 이동이 없어도 기록함</string>
+    <string name="center_location">중심 위치</string>
+    <string name="location_summary_on">위도, 경도</string>
+    <string name="location_summary_off">위 기록하는 설정이 on 되어야 설정가능함</string>
+    <string name="title_activity_maps">MapsActivity</string>
+
+    <!-- Service Preferences -->
+    <string name="service_start">서비스 시작</string>
+    <string name="service_stop">서비스 정지</string>
+    <string name="server_url">서버 URL</string>
+</resources>

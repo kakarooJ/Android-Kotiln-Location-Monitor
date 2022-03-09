@@ -1,0 +1,17 @@
+<resources>
+
+    <!-- Custom Style for PreferenceFragmentCompat -->
+    <style name="PreferenceFragment.App" parent="PreferenceFragment.Material">
+        <!-- Custom layout for PreferenceFragmentCompat -->
+        <!--<item name="android:layout">@layout/pref_screen</item>-->
+    </style>
+
+    <!-- Style for a custom Preference Entry -->
+    <style name="Base.Preference.App" parent="Preference.Material" />
+
+    <!-- Style for a DialogPreference Entry -->
+    <style name="Preference.App.DialogPreference" parent="Base.Preference.App">
+        <item name="positiveButtonText">@android:string/ok</item>
+        <item name="negativeButtonText">@android:string/cancel</item>
+    </style>
+</resources>

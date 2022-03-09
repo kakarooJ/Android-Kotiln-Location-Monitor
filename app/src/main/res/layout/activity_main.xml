@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SubActivity">
+
+    <Button
+        android:id="@+id/bt_start_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/side_margin"
+        android:layout_marginTop="@dimen/top_margin"
+        android:text="시작시간"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_start_time"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/item_margin"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:text="설정된 시작시간"
+        android:textSize="@dimen/text_size"
+        app:layout_constraintBottom_toBottomOf="@+id/bt_start_time"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/bt_start_time"
+        app:layout_constraintTop_toTopOf="@+id/bt_start_time" />
+
+    <Button
+        android:id="@+id/bt_time_gap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/item_top_bottom_gap"
+        android:text="시간간격"
+        app:layout_constraintStart_toStartOf="@+id/bt_start_time"
+        app:layout_constraintTop_toBottomOf="@+id/bt_start_time" />
+
+    <TextView
+        android:id="@+id/tv_time_gap"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:text="설정된 시간간격"
+        android:textSize="@dimen/text_size"
+        app:layout_constraintBottom_toBottomOf="@+id/bt_time_gap"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tv_start_time"
+        app:layout_constraintTop_toTopOf="@+id/bt_time_gap" />
+
+    <Button
+        android:id="@+id/bt_time_except"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/item_top_bottom_gap"
+        android:text="제외시간"
+        app:layout_constraintStart_toStartOf="@+id/bt_time_gap"
+        app:layout_constraintTop_toBottomOf="@+id/bt_time_gap" />
+
+    <TextView
+        android:id="@+id/tv_time_except"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:text="설정된 제외시간"
+        android:textSize="@dimen/text_size"
+        app:layout_constraintBottom_toBottomOf="@+id/bt_time_except"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tv_start_time"
+        app:layout_constraintTop_toTopOf="@+id/bt_time_except" />
+
+    <Button
+        android:id="@+id/bt_date_except"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/item_top_bottom_gap"
+        android:text="제외요일"
+        app:layout_constraintStart_toStartOf="@+id/bt_time_except"
+        app:layout_constraintTop_toBottomOf="@+id/bt_time_except" />
+
+    <TextView
+        android:id="@+id/tv_date_except"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:text="설정된 제외요일"
+        android:textSize="@dimen/text_size"
+        app:layout_constraintBottom_toBottomOf="@+id/bt_date_except"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tv_start_time"
+        app:layout_constraintTop_toTopOf="@+id/bt_date_except" />
+
+    <CheckBox
+        android:id="@+id/chk_radius"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/item_top_bottom_gap"
+        android:text="반경설정"
+        app:layout_constraintStart_toStartOf="@+id/bt_date_except"
+        app:layout_constraintTop_toBottomOf="@+id/bt_date_except" />
+
+    <TextView
+        android:id="@+id/tv_radius_description"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:text="중심위치의 반경이내는 기록하지 않음"
+        app:layout_constraintBottom_toBottomOf="@+id/chk_radius"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tv_start_time"
+        app:layout_constraintTop_toTopOf="@+id/chk_radius" />
+
+    <Button
+        android:id="@+id/bt_location_origin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/item_top_bottom_gap"
+        android:text="중심위치"
+        app:layout_constraintStart_toStartOf="@+id/bt_date_except"
+        app:layout_constraintTop_toBottomOf="@+id/chk_radius" />
+
+    <TextView
+        android:id="@+id/tv_location_origin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:text="위도: 38.2323234, \n경도: 147.3422352"
+        android:textSize="@dimen/text_size"
+        app:layout_constraintBottom_toBottomOf="@+id/bt_location_origin"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tv_start_time"
+        app:layout_constraintTop_toTopOf="@+id/bt_location_origin" />
+
+    <Button
+        android:id="@+id/bt_service_start"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/side_margin"
+        android:layout_marginTop="64dp"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:text="서비스 시작"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bt_location_origin" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

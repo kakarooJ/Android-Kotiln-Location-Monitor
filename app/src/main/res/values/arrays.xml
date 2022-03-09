@@ -1,0 +1,79 @@
+<resources>
+    <!-- Time Preference -->
+    <string-array name="time_entries">
+        <item>1분</item>
+        <item>5분</item>
+        <item>10분</item>
+        <item>20분</item>
+        <item>30분</item>
+        <item>1시간</item>
+        <item>2시간</item>
+        <item>3시간</item>
+        <item>4시간</item>
+        <item>6시간</item>
+        <item>12시간</item>
+        <item>24시간</item>
+    </string-array>
+
+    <string-array name="time_values">
+        <item>1</item>
+        <item>5</item>
+        <item>10</item>
+        <item>20</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>180</item>
+        <item>240</item>
+        <item>360</item>
+        <item>720</item>
+        <item>1440</item>
+    </string-array>
+
+    <string-array name="time_ex_entries">
+        <item>해제</item>
+        <item>5분</item>
+        <item>10분</item>
+        <item>20분</item>
+        <item>30분</item>
+        <item>1시간</item>
+        <item>2시간</item>
+        <item>3시간</item>
+        <item>4시간</item>
+        <item>6시간</item>
+    </string-array>
+
+    <string-array name="time_ex_values">
+        <item>0</item>
+        <item>5</item>
+        <item>10</item>
+        <item>20</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>180</item>
+        <item>240</item>
+        <item>360</item>
+    </string-array>
+
+    <!-- Day Preference -->
+    <string-array name="day_entries">
+        <item>일</item>
+        <item>월</item>
+        <item>화</item>
+        <item>수</item>
+        <item>목</item>
+        <item>금</item>
+        <item>토</item>
+    </string-array>
+
+    <string-array name="day_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+    </string-array>
+</resources>

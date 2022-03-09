@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/Users/twins/AndroidStudioProjects/FootPrinterService/app/src/main/res/drawable/edge.xml" value="0.13177083333333334" />
+        <entry key="..\:/Users/twins/AndroidStudioProjects/FootPrinterService/app/src/main/res/layout-v24/pref_screen.xml" value="0.12708333333333333" />
+        <entry key="..\:/Users/twins/AndroidStudioProjects/FootPrinterService/app/src/main/res/layout/activity_main.xml" value="0.264" />
+        <entry key="..\:/Users/twins/AndroidStudioProjects/FootPrinterService/app/src/main/res/layout/pref_screen.xml" value="0.12708333333333333" />
+        <entry key="..\:/Users/twins/AndroidStudioProjects/FootPrinterService/app/src/main/res/layout/settings_activity.xml" value="0.115625" />
+        <entry key="..\:/Users/twins/AndroidStudioProjects/FootPrinterService/app/src/main/res/xml/app_preferences.xml" value="0.2328125" />
+        <entry key="..\:/Users/twins/AndroidStudioProjects/FootPrinterService/app/src/main/res/xml/root_preferences.xml" value="0.39768339768339767" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectPlainTextFileTypeManager">
+    <file url="file://$PROJECT_DIR$/app/src/main/res/xml/app_preferences.xml" />
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>

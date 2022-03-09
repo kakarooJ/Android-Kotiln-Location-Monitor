@@ -1,0 +1,95 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/service_time_setting"
+        app:key="serviceStartCategory_Key"
+        app:iconSpaceReserved="false">
+
+        <com.kakaroo.footprinterservice.TimepickerPreference
+            app:key="timePref_Key"
+            app:title="@string/service_start_time"
+            app:summary="서비스가 시작되는 시간을 설정해 주세요"
+            app:iconSpaceReserved="false"
+            app:defaultValue="90"/>
+
+        <ListPreference
+            app:key="timeIntervalPref_key"
+            app:defaultValue="30"
+            app:entries="@array/time_entries"
+            app:entryValues="@array/time_values"
+            app:title="@string/service_time_gap"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/service_except_setting"
+        app:key="serviceStopCategory_Key"
+        app:iconSpaceReserved="false" >
+
+        <com.kakaroo.footprinterservice.TimepickerPreference
+            app:key="timeExPref_key"
+            app:title="@string/service_except_start_time"
+            app:summary="서비스가 제외되는 시작시간입니다."
+            app:iconSpaceReserved="false"
+            app:defaultValue="90"/>
+
+        <ListPreference
+            app:key="timeExGapPref_key"
+            app:defaultValue="0"
+            app:entries="@array/time_ex_entries"
+            app:entryValues="@array/time_ex_values"
+            app:title="@string/service_except_time_gap"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+        <MultiSelectListPreference
+            app:key="timeExDayPref_key"
+            app:entries="@array/day_entries"
+            app:entryValues="@array/day_values"
+            app:title="@string/service_except_day_gap"
+            app:summary="@string/service_except_no_day_gap"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/location_setting"
+        app:key="locationCategory_Key"
+        app:iconSpaceReserved="false" >
+
+        <SwitchPreferenceCompat
+            app:key="near_key"
+            app:title="@string/store_nearby_location"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+<!--        <PreferenceScreen
+            app:dependency="near_key"
+            app:key="location_key"
+            app:title="@string/center_location"
+            app:summary="@string/location_summary_on"
+            app:summaryOff="@string/location_summary_off"
+            app:summaryOn="@string/location_summary_on"
+            app:iconSpaceReserved="false" /> -->
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/service_control"
+        app:iconSpaceReserved="false" >
+
+        <SwitchPreferenceCompat
+            app:key="service_start_key"
+            app:title="@string/service_start"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="url_key"
+            app:title="@string/server_url"
+            app:defaultValue="http://3.35.40.166:8080"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
