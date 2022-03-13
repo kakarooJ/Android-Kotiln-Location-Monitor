@@ -17,56 +17,43 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.preference.PreferenceManager
 import com.google.android.gms.location.*
-import com.google.gson.Gson
 import com.kakaroo.footprinterservice.Common
+import com.kakaroo.footprinterservice.RestartService
 import com.kakaroo.footprinterservice.entity.FootPrinter
 import com.kakaroo.footprinterservice.service.IRetrofitNetworkService
 import com.kakaroo.footprinterservice.service.MyAlarmService
-import org.json.JSONArray
-import org.json.JSONObject
-import org.json.JSONTokener
+import com.kakaroo.footprinterservice.utility.MyUtility
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.converter.gson.GsonConverterFactory
 
 import retrofit2.Retrofit
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.lang.Exception
-import java.lang.StringBuilder
-import java.net.HttpURLConnection
-import java.net.URL
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.math.min
 
 
 class MyReceiver : BroadcastReceiver() {    //manifest에 등록
 
     var mCurrentLocation : Location = Location("")
-    lateinit var mContext: Context
+    var mContext: Context? = null
     lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
     //var mRestartFlag: Boolean = false
 
-    @RequiresApi(Build.VERSION_CODES.M)
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
         var recvMode: Int = Common.ALARM_REPEAT_MODE
-        Log.d(Common.MY_TAG, "onReceive : ${intent?.action}")
+        Log.e(Common.MY_TAG, "onReceive : ${intent?.action}")
         when (intent?.action) {
             Common.MY_ACTION_FOOT_PRINTER -> {
                 recvMode = Common.ALARM_REPEAT_MODE
             }
-            Common.MY_ACTION_FOOT_PRINTER_RESTART -> {
-                recvMode = Common.ALARM_RESTART_MODE
-            }
             Intent.ACTION_SCREEN_ON -> {
                 recvMode = Common.BOOT_COMPLETE_MODE
+            }
+            Common.MY_ACTION_RESTART_SERVICE -> {
+                recvMode = Common.RESTART_SERVICE_MODE
             }
         }
 
@@ -74,122 +61,133 @@ class MyReceiver : BroadcastReceiver() {    //manifest에 등록
             mContext = context
 
             val mPref = PreferenceManager.getDefaultSharedPreferences(mContext)
-            val myAlarmService = MyAlarmService(this.mContext, mPref)
+            val myAlarmService = MyAlarmService(mContext!!, mPref)
 
             if (recvMode == Common.ALARM_REPEAT_MODE) {
-                //시나리오 : 나중에
-                //1. 제외 시간 또는 제외날짜 설정되어 있는지 확인
-                //  1.1 제외시간이 설정된 경우 현재 시간 구해서 비교
-                //    1.1.1 제외시간이 포함되어 있으면 리턴
-                //현재시간이 제외시간에 포함되면 기존 알람 스톱, 알람을 다음 시작시간에 맞게끔 재설정
-                //재시작 플래그를 설정
-
-                //var selections: HashSet<String>// = HashSet<String>()
-                try {
-                    val selections = mPref.getStringSet("timeExDayPref_key", null) as HashSet<String>
-                    if(selections != null) {
-                        val selected: List<String> = selections.toList()
-
-                        if(selected.isNotEmpty()) { //설정된 제외 요일이 있는 경우
-                            val nowCalendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
-                            val dayOfWeek = nowCalendar.get(Calendar.DAY_OF_WEEK)   //일:1, 월:2 .. 토:7
-                            selected.forEach { item ->
-                                if(item.toInt() == dayOfWeek) {
-                                    //TODO: 알람 해제, 알람을 다음 시작시간에 맞게끔 재설정하고 리턴
-                                    myAlarmService.stopService()
-                                    myAlarmService.startService(Common.ALARM_RESTART_MODE)
-                                    Log.i(Common.MY_TAG, "OnReceive - Exception day!!")
-                                    return
-                                }
-                            }
-                        }
-                    }
-                } catch (e: NullPointerException) {
-                    Log.w(Common.MY_TAG, "$e :: intentional NullPointerException when getting timeExDayPref_key")
+                if(executeLocationService(mPref, myAlarmService)) {
+                    //알람 반복을 위해 다시 알람을 등록한다.
+                    myAlarmService.startAlarmService(Common.ALARM_RESTART_REPEAT_MODE)
                 }
-
-
-                val strInterval : String? = mPref.getString("timeExGapPref_key", "0")
-                val minuteInterval : Int = strInterval?.toInt() ?: 0
-
-                if(minuteInterval != 0) {   //제외 시간이 설정된 경우
-                    val minuteValue = mPref.getInt("timeExPref_key", 0)
-                    val endMinuteVlaue = minuteValue + minuteInterval
-
-                    val hourTime = minuteValue / 60
-                    val minuteTime = minuteValue - (hourTime*60)
-
-                    val endHourTime = endMinuteVlaue / 60
-                    val endMinuteTime = endMinuteVlaue - (hourTime*60)
-
-                    // 현재 지정된 시간으로 알람 시간 설정
-                    val startCalendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
-                    startCalendar.timeInMillis = System.currentTimeMillis()
-                    startCalendar[Calendar.HOUR_OF_DAY] = hourTime
-                    startCalendar[Calendar.MINUTE] = minuteTime
-                    startCalendar[Calendar.SECOND] = 0
-
-                    val endCalendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
-                    endCalendar.timeInMillis = System.currentTimeMillis()
-                    endCalendar[Calendar.HOUR_OF_DAY] = endHourTime
-                    endCalendar[Calendar.MINUTE] = endMinuteTime
-                    endCalendar[Calendar.SECOND] = 0
-
-                    // 이미 지난 시간을 지정했다면 다음날 같은 시간으로 설정
-                    val nowCalendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
-                    //현재 시간이 제외시간에 포함되는가?
-                    if (startCalendar.before(nowCalendar) && endCalendar.after(nowCalendar)) {
-                        //TODO: 알람 해제, 알람을 다음 시작시간에 맞게끔 재설정하고 리턴
-                        Log.i(Common.MY_TAG, "OnReceive - ${startCalendar.get(Calendar.HOUR_OF_DAY)}시 ${startCalendar.get(Calendar.MINUTE)}분부터 "+
-                                "${endCalendar.get(Calendar.HOUR_OF_DAY)}시 ${endCalendar.get(Calendar.MINUTE)}분까지 제외시간입니다.")
-                        //mRestartFlag = true
-                        myAlarmService.stopService()
-                        myAlarmService.startService(Common.ALARM_RESTART_MODE)
-                        return
-                    } /*else {
-                        if(mRestartFlag) {
-                            //TODO: 알람간격 재설정
-                            Log.i(Common.MY_TAG, "OnReceive - 알람을 재설정합니다.!!")
-                            mRestartFlag = false
-                            myAlarmService.startService(Common.ALARM_REPEAT_MODE)
-                        }
-                    }*/
-                }
-
-                //2. 위치 퍼미션 확인
-                val locationManager = mContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-                    && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                    Log.i(Common.MY_TAG, "OnReceive - LocationServices is off, return")
-                    return
-                }
-
-                //3. 현재 위치 정보 얻기
-                startLocationUpdates(mContext)
-
-            }
-            else if (recvMode == Common.ALARM_RESTART_MODE) {
-                Log.i(Common.MY_TAG, "OnReceive - 해제시간 후, 알람을 재설정합니다.!!")
-                myAlarmService.startService(Common.ALARM_REPEAT_MODE)
             }
             else if (recvMode == Common.BOOT_COMPLETE_MODE) {
+                context.startService(Intent(context, RestartService::class.java))
+                /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(Intent(context, RestartService::class.java))
+                } else {
+                    context.startService(Intent(context, RestartService::class.java))
+                }*/
+
                 val bStartedService = mPref.getBoolean("service_start_key", false)
                 if(bStartedService) {
-                    Log.i(Common.MY_TAG, "OnReceive - 부팅후, 서비스 알람을 재설정합니다.!!")
-                    myAlarmService.startService(Common.ALARM_REPEAT_MODE)
+                    val nowCalendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
+                    if(timeIsIncludedExceptionTime(nowCalendar, mPref)) {  //현재시간이 해제시간에 포함되면
+                        Log.i(Common.MY_TAG, "OnReceive - 부팅후, 현재 해제시간이므로 알람을 재설정합니다.!!")
+                        myAlarmService.startAlarmService(Common.ALARM_RESTART_MODE)
+                    } else {
+                        Log.i(Common.MY_TAG, "OnReceive - 부팅후, 서비스 알람을 재설정합니다.!!")
+                        executeLocationService(mPref, myAlarmService)   //바로 HTTP 시작
+
+                        myAlarmService.startAlarmService(Common.ALARM_RESTART_REPEAT_MODE)
+                    }
                 } else {
                     Log.i(Common.MY_TAG, "OnReceive - 서비스가 켜져 있지 않았습니다.")
                 }
+            } else if(recvMode == Common.RESTART_SERVICE_MODE) {
+                Log.i(Common.MY_TAG, "OnReceive - RestartService will be started")
+                val bStartedService = mPref.getBoolean("service_start_key", false)
+                //Log.i(Common.MY_TAG, "RESTART_SERVICE_MODE:: bStartedService:${bStartedService}")
+                //알람 반복을 위해 다시 알람을 등록한다.
+                if(bStartedService) {
+                    myAlarmService.startAlarmService(Common.RESTART_SERVICE_MODE)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(Intent(context, RestartService::class.java))
+                } else {
+                    context.startService(Intent(context, RestartService::class.java))
+                }
             }
+        } else {
+            Log.e(Common.MY_TAG, "OnReceive - context is not initialized yet!!")
         }
     }
 
+    //1. 제외 시간 또는 제외날짜 설정되어 있는지 확인
+    //  1.1 제외시간이 설정된 경우 현재 시간 구해서 비교
+    //    1.1.1 제외시간이 포함되어 있으면 리턴
+    //현재시간이 제외시간에 포함되면 기존 알람 스톱, 알람을 다음 시작시간에 맞게끔 재설정
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun executeLocationService(mPref: SharedPreferences, myAlarmService: MyAlarmService): Boolean {
+        try {
+            val selections = mPref.getStringSet("timeExDayPref_key", null) as HashSet<String>
+            if(selections != null) {
+                val selected: List<String> = selections.toList()
+
+                if(selected.isNotEmpty()) { //설정된 제외 요일이 있는 경우
+                    val nowCalendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
+                    val dayOfWeek = nowCalendar.get(Calendar.DAY_OF_WEEK)   //일:1, 월:2 .. 토:7
+                    selected.forEach { item ->
+                        if(item.toInt() == dayOfWeek) {
+                            //TODO: 알람 해제, 알람을 다음 시작시간에 맞게끔 재설정하고 리턴
+                            myAlarmService.startAlarmService(Common.ALARM_DAY_CHANGE_MODE)
+                            Log.i(Common.MY_TAG, "OnReceive - Today[${nowCalendar[Calendar.DAY_OF_WEEK]} is Exception day!!")
+                            return false
+                        }
+                    }
+                }
+            }
+        } catch (e: NullPointerException) {
+            Log.w(Common.MY_TAG, "$e :: intentional NullPointerException when getting timeExDayPref_key")
+        }
+
+        //현재 시간이 제외시간에 포함되는가?
+        val nowCalendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
+        if(timeIsIncludedExceptionTime(nowCalendar, mPref)){
+            myAlarmService.startAlarmService(Common.ALARM_RESTART_MODE)
+            return false
+        }
+
+        //2. 위치 퍼미션 확인
+        val locationManager = mContext!!.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+            && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            Log.i(Common.MY_TAG, "OnReceive - LocationServices is off, return")
+
+            myAlarmService.startAlarmService(Common.ALARM_RESTART_REPEAT_MODE)
+            return false
+        }
+
+        //3. 현재 위치 정보 얻기
+        startLocationUpdates(mContext)
+
+        return true
+    }
+
+    fun timeIsIncludedExceptionTime(calendar: Calendar, mPref: SharedPreferences) : Boolean {
+        if(mPref != null) {
+            //val mPref = PreferenceManager.getDefaultSharedPreferences(mContext)
+
+            val strInterval : String? = mPref.getString("timeExGapPref_key", "0")
+            val minuteInterval : Int = strInterval?.toInt() ?: 0
+
+            if(minuteInterval != 0) {   //제외 시간이 설정된 경우
+                val minuteValue = mPref.getInt("timeExPref_key", 0)
+                return MyUtility().timeIsIncludedExceptionTime(calendar, minuteValue, minuteInterval)
+            }
+        } else {
+            Log.d(Common.MY_TAG, "timeIsIncludedExceptionTime:: mPref is null!!!")
+        }
+        return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun startLocationUpdates(context: Context?) {
         Log.i(Common.MY_TAG, "startLocationUpdates called")
         if(context != null) {
             if (ActivityCompat.checkSelfPermission(context.applicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context.applicationContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context.applicationContext, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(context, "위치 권한 설정(항상허용)이 필요합니다!!", Toast.LENGTH_SHORT).show()
+                Log.e(Common.MY_TAG, "startLocationUpdates:: permission is needed")
                 return
             }
         } else {
@@ -210,7 +208,17 @@ class MyReceiver : BroadcastReceiver() {    //manifest에 등록
                 if(location == null) {
                     Log.e(Common.MY_TAG, "location get fail")
                 } else {
-                    Log.d(Common.MY_TAG, "Last Location:: ${location.latitude} , ${location.longitude}")
+                    Log.w(Common.MY_TAG, ">>Last Location:: ${location.latitude} , ${location.longitude}")
+                    if(!checkTimeIsGoodCompareToPreviousPostTime()) {
+                        Log.i(Common.MY_TAG, "Last Location:: 동일시간에 location change 정보가 추가로 들어왔기 때문에 리턴합니다.")
+                        removeLocationUpdate()
+                    } else {
+                        mCurrentLocation = location
+                        if(checkToNeedHttpPostWithLocation()) {
+                            executeHttpPost()
+                            removeLocationUpdate()
+                        }
+                    }
                 }
             }
             .addOnFailureListener {
@@ -236,15 +244,22 @@ class MyReceiver : BroadcastReceiver() {    //manifest에 등록
     //3.1. 위치 정보 callback 호출
     @RequiresApi(Build.VERSION_CODES.O)
     fun onLocationChanged(location: Location) {
-        mCurrentLocation = location
-        Log.i(Common.MY_TAG, "onLocationChanged::현재 위치는 위도:${mCurrentLocation.latitude}, 경도:${mCurrentLocation.longitude} 입니다.")
+        Log.i(Common.MY_TAG, ">>onLocationChanged::현재 위치는 위도:${location.latitude}, 경도:${location.longitude} 입니다.")
 
-        if(isSameMinuteCompareToPreviousPostTime()) {
+        if(!checkTimeIsGoodCompareToPreviousPostTime()) {
             Log.i(Common.MY_TAG, "onLocationChanged:: 동일시간에 location change 정보가 추가로 들어왔기 때문에 리턴합니다.")
             removeLocationUpdate()
             return
         }
 
+        mCurrentLocation = location
+        if(checkToNeedHttpPostWithLocation()) {
+            executeHttpPost()
+            removeLocationUpdate()
+        }
+    }
+
+    private fun checkToNeedHttpPostWithLocation(): Boolean {
         val mPref = PreferenceManager.getDefaultSharedPreferences(mContext)
         val bNearCheck : Boolean = mPref.getBoolean("near_key", false)
 
@@ -266,45 +281,45 @@ class MyReceiver : BroadcastReceiver() {    //manifest에 등록
             val distance : Float = mCurrentLocation.distanceTo(prevLocation)    //미터 단위
             if(distance < Common.RADIUS_DISTANCE) {
                 Log.i(Common.MY_TAG, "반경 ${Common.RADIUS_DISTANCE} 미터 이내여서 저장하지 않습니다.")
-                return
+                return false
             }
         }
-        executeHttpPost(mPref)
-        removeLocationUpdate()
+        return true
     }
 
     fun removeLocationUpdate(){
         mFusedLocationProviderClient.removeLocationUpdates(mLocationCallback)
     }
 
-    private fun isSameMinuteCompareToPreviousPostTime(): Boolean {
+    private fun checkTimeIsGoodCompareToPreviousPostTime(): Boolean {
         val mPref = PreferenceManager.getDefaultSharedPreferences(mContext)
 
         val calendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
         val thisYear = calendar.get(Calendar.YEAR)
         val thisDayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
+        val thisHour = calendar.get(Calendar.HOUR_OF_DAY)
+        val thisMinute = calendar.get(Calendar.MINUTE)
 
         val prevYear = mPref.getInt(Common.POST_CALENDAR_YEAR_KEY, 2000)
         val prevDayOfYear = mPref.getInt(Common.POST_CALENDAR_DAY_OF_YEAR_KEY, 1)
+        val prevHour = mPref.getInt(Common.POST_CALENDAR_HOUR_KEY, 9)
+        val prevMinute = mPref.getInt(Common.POST_CALENDAR_MINUTE_KEY, 10)
 
-        Log.e(Common.MY_TAG, "thisYear: $thisYear, thisDayOfYear: $thisDayOfYear, prevYear: $prevYear, prevDayOfYear: $prevDayOfYear")
+        Log.i(Common.MY_TAG, "현재 전송 시각은 ${thisYear}년 ${thisDayOfYear}일째 ${thisHour}시 ${thisMinute}분 입니다.")
+        Log.i(Common.MY_TAG, "이전 전송 시각은 ${prevYear}년 ${prevDayOfYear}일째 ${prevHour}시 ${prevMinute}분 입니다.")
 
-        if(thisYear == prevYear && thisDayOfYear == prevDayOfYear)  {   //같은 날이면
-            val minute = calendar.get(Calendar.MINUTE)
-            val prevMinute = mPref.getInt(Common.POST_CALENDAR_MINUTE_KEY, 10)
-            Log.e(Common.MY_TAG, "minute: $minute, prevMinute: $prevMinute")
-
-            if(prevMinute == minute) {  //분까지 같으면
-                Log.i(Common.MY_TAG, "이전에 post 한 시간과 같습니다.")
-                return true
-            }
+        if(thisYear == prevYear && thisDayOfYear == prevDayOfYear
+            && thisHour == prevHour && thisMinute == prevMinute)  {   //같은 시간에 전송이 됐다면
+            Log.i(Common.MY_TAG, "이전에 post 한 시간과 같습니다.")
+            return false
         }
-        return false
+        return true
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun executeHttpPost(mPref: SharedPreferences) {
+    private fun executeHttpPost() {
         //3.1.3. HTTP_POST
+        val mPref = PreferenceManager.getDefaultSharedPreferences(mContext)
         var urlAddress = mPref.getString("url_key", Common.DEFAULT_URL)
         if(urlAddress == "") {
             urlAddress = Common.DEFAULT_URL
@@ -337,7 +352,7 @@ class MyReceiver : BroadcastReceiver() {    //manifest에 등록
 
         //3.1.2 현재 위치/시간을 preference에 저장
         saveLocationToPreference()
-        savePostCalendarPreference()
+        saveHttpPostTimeToPreference()
 
         networkService.postMethod(data).enqueue(object : Callback<Int> {
             override fun onResponse(call: Call<Int>, response: Response<Int>) {
@@ -350,93 +365,6 @@ class MyReceiver : BroadcastReceiver() {    //manifest에 등록
             }
         })
     }
-
-    //jingyu_test
-    /*
-    public fun executeHttpPost(mPref: SharedPreferences, id: Long) {
-        //Result Text View에 출력할 Output
-        var result : String = ""
-
-        // HttpUrlConnection
-        val th = Thread {
-            try {
-                //3.1.3. HTTP_POST
-                var page = mPref.getString("url_key", Common.DEFAULT_URL)
-                if(page == "") {
-                    page = Common.DEFAULT_URL
-                }
-                page += Common.URL_SLASH + "post"
-
-                var bNeedRequestParam: Boolean = true
-                // URL 객체 생성
-                val url = URL(page)
-                // 연결 객체 생성
-                val httpConn: HttpURLConnection = url.openConnection() as HttpURLConnection
-
-                // 결과값 저장 문자열
-                val sb = StringBuilder()
-
-                // 연결되면
-                if (httpConn != null) {
-                    Log.i(Common.MY_TAG, page + " connection succesfully")
-                    result += "Connection successfully!" + "\n"
-                    // 응답 타임아웃 설정
-                    httpConn.setRequestProperty("Accept", "application/json")
-                    httpConn.setRequestProperty("Content-type", "application/json; utf-8")
-                    httpConn.setConnectTimeout(100000)
-                    // POST 요청방식
-                    httpConn.setRequestMethod("POST")
-
-                    val data = FootPrinter(id = 1, time = "2022-03-01 07:01:52", latitude = 37.290000, longitude = 129.3500000)
-                    val gson = Gson()
-                    val jsonStr: String = gson.toJson(data)
-
-                    val wr = OutputStreamWriter(httpConn.getOutputStream())
-                    wr.write(jsonStr)
-                    wr.flush()
-
-                    // url에 접속 성공하면 (200)
-                    var status : Int = try {
-                        httpConn.responseCode
-                    } catch (e: IOException) {
-                        // HttpUrlConnection will throw an IOException if any 4XX
-                        // response is sent. If we request the status again, this
-                        // time the internal status will be properly set, and we'll be
-                        // able to retrieve it.
-                        Log.e(Common.MY_TAG, "URL responseCode error :$e")
-                        httpConn.responseCode
-                    }
-                    result += "Respose code:" + status + "\n"
-                    Log.e(Common.MY_TAG, "URL responseCode code: $status")
-
-                    if(status == HttpURLConnection.HTTP_OK) {
-                        val br = BufferedReader(
-                            InputStreamReader(
-                                httpConn.inputStream, "utf-8"
-                            )
-                        )
-                        var line: String?
-
-                        while (br.readLine().also { line = it } != null) {
-                            sb.append(line)
-                        }
-                        result += sb.toString()
-                        // 버퍼리더 종료
-                        br.close()
-                    }
-                    // 연결 끊기
-                    httpConn.disconnect()
-                }
-            } catch (e: Exception) {
-                Log.e(Common.MY_TAG, "HttpURLConnection error :$e")
-                result += "HttpURLConnection error! $e"
-            } finally {
-                Log.i(Common.MY_TAG, "result: "+result)
-                //binding.tvResult.setText(result)
-            }
-        }
-        th.start()
-    }*/
 
     private fun saveLocationToPreference() {
         val mPref = PreferenceManager.getDefaultSharedPreferences(mContext)
@@ -454,19 +382,22 @@ class MyReceiver : BroadcastReceiver() {    //manifest에 등록
             apply()
         }
     }
-    private fun savePostCalendarPreference() {
+    private fun saveHttpPostTimeToPreference() {
         val mPref = PreferenceManager.getDefaultSharedPreferences(mContext)
         val calendar = Calendar.getInstance(TimeZone.getTimeZone(Common.ASIA_TIME_ZONE))
         val year = calendar.get(Calendar.YEAR)
         val dayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minutes = calendar.get(Calendar.MINUTE)
 
-        Log.i(Common.MY_TAG, "savePostCalendarPreference:: year:$year, dayOfYear:$dayOfYear, min:$minutes")
+        Log.i(Common.MY_TAG, "saveHttpPostTimeToPreference::저장되는 시간은 year:$year, dayOfYear:$dayOfYear, hour:$hour, min:$minutes 입니다.")
 
         with (mPref.edit()) {
             putInt(Common.POST_CALENDAR_YEAR_KEY, year)
             putInt(Common.POST_CALENDAR_DAY_OF_YEAR_KEY, dayOfYear)
+            putInt(Common.POST_CALENDAR_HOUR_KEY, hour)
             putInt(Common.POST_CALENDAR_MINUTE_KEY, minutes)
+            putBoolean(Common.HAS_BEEN_POST_THIS_SERVICE_KEY, true)
             apply()
         }
     }

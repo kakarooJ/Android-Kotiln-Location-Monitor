@@ -12,12 +12,16 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!--
  ACCESS_COARSE_LOCATION은 네트워크(와이파이, 3G, 4G 등)를 이용해서 단말기 위치를 식별하고,
      ACCESS_FINE_LOCATION은 GPS와 네트워크를 이용한다.
      때문에 ACCESS_FINE_LOACTION을 사용하면 더 정확한 위치를 알 수 있다.
     -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.BOOT_COMPLETED" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -26,21 +30,23 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FootPrinterService"
+        android:persistent="true"
         android:usesCleartextTraffic="true">
+        <service
+            android:name=".RestartService"
+            android:enabled="true"
+            android:exported="true"/>
 
         <receiver android:name=".receiver.MyReceiver"
             android:enabled="true"
             android:exported="true">
-            <intent-filter >
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                <action android:name="com.kakaroo.footprinterservice.FOOT_PRINTER"/>
-                <action android:name="com.kakaroo.footprinterservice.FOOT_PRINTER_RESTART"/>
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.kakaroo.footprinterservice.FOOT_PRINTER" />
+                <action android:name="com.kakaroo.footprinterservice.RESTART.PERSISTENTSERVICE" />
             </intent-filter>
         </receiver>
 
-        <activity
-            android:name=".SubActivity"
-            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

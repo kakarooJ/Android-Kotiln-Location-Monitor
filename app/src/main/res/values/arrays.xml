@@ -32,6 +32,7 @@
 
     <string-array name="time_ex_entries">
         <item>해제</item>
+        <item>2분</item>
         <item>5분</item>
         <item>10분</item>
         <item>20분</item>
@@ -45,6 +46,7 @@
 
     <string-array name="time_ex_values">
         <item>0</item>
+        <item>2</item>
         <item>5</item>
         <item>10</item>
         <item>20</item>

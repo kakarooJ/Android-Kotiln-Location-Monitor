@@ -1,45 +1,27 @@
 package com.kakaroo.footprinterservice
 
 import android.app.Activity
-import android.content.Intent
+import android.content.*
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import android.content.SharedPreferences
 import java.util.*
 import android.os.Build
 
-import android.widget.Toast
 import androidx.core.app.ActivityCompat
 
 import android.content.pm.PackageManager
 import android.location.LocationManager
-import android.content.Context
 import androidx.annotation.RequiresApi
-import android.content.DialogInterface
 import android.provider.Settings
 import android.util.Log
 import android.view.MenuItem
+import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-
 import androidx.preference.*
-import com.google.gson.Gson
-import com.kakaroo.footprinterservice.entity.FootPrinter
-import com.kakaroo.footprinterservice.service.IRetrofitNetworkService
 import com.kakaroo.footprinterservice.service.MyAlarmService
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.lang.Exception
-import java.lang.StringBuilder
-import java.net.HttpURLConnection
-import java.net.URL
-import java.io.OutputStreamWriter
-
+import com.google.android.material.snackbar.Snackbar
+import com.kakaroo.footprinterservice.receiver.MyReceiver
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,14 +40,51 @@ class MainActivity : AppCompatActivity() {
 
         //UI 실행화면이므로
         if (!checkLocationServicesStatus()) {
+            Log.e(Common.MY_TAG, "위치 설정이 필요합니다.")
             showDialogForLocationServiceSetting();
         }else {
             checkRunTimePermission();
         }
+
+
+    }
+
+    private fun startRestartService() {
+        Log.i(Common.MY_TAG, "MainActivity startRestartService called")
+        val intent = Intent(this, RestartService::class.java)
+        intent.action = Common.ACTION_RESTART_SERVICE_FOREGROUND
+        //val intentFilter = IntentFilter("com.kakaroo.footprinter.RestartService");
+        //val myReceiver = MyReceiver()
+        //registerReceiver(myReceiver, intentFilter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+    private fun stopRestartService() {
+        Log.i(Common.MY_TAG, "MainActivity stopRestartService called")
+        val intent = Intent(this, RestartService::class.java)
+        //val intentFilter = IntentFilter("com.kakaroo.footprinter.RestartService");
+        stopService(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        /*
+        if (!checkLocationServicesStatus()) {
+            Log.e(Common.MY_TAG, "위치 설정이 필요합니다.")
+            showDialogForLocationServiceSetting();
+        }else {
+            checkRunTimePermission();
+        }*/
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.i(Common.MY_TAG, "MainActivity onDestroy called")
+        //val myReceiver = MyReceiver()
+        //unregisterReceiver(myReceiver)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -89,9 +108,34 @@ class MainActivity : AppCompatActivity() {
                     != PackageManager.PERMISSION_GRANTED)
             || (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
                     != PackageManager.PERMISSION_GRANTED)
-            || (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED) ){
+            /*|| (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED)*/ ){
+            Log.e(Common.MY_TAG, "checkRunTimePermission:: 위치 권한이 필요합니다.")
+            //Toast.makeText(this, "위치 권한 설정(항상허용)이 필요합니다!!", Toast.LENGTH_SHORT).show()
+            // 3-1. 사용자가 퍼미션 거부를 한 적이 있는 경우에는
+
+            // 3-1. 사용자가 퍼미션 거부를 한 적이 있는 경우에는
+            /*if (ActivityCompat.shouldShowRequestPermissionRationale(this,Common.MAP_PERMISSIONS[0])
+                || ActivityCompat.shouldShowRequestPermissionRationale(this,Common.MAP_PERMISSIONS[1]) ) {
+
+                // 3-2. 요청을 진행하기 전에 사용자가에게 퍼미션이 필요한 이유를 설명해줄 필요가 있습니다.
+                Snackbar.make(
+                    findViewById(R.id.main_layout), "이 앱을 실행하려면 위치 항상 허용 권한이 필요합니다.",
+                    Snackbar.LENGTH_INDEFINITE
+                ).setAction("확인", object : View.OnClickListener {
+                    override fun onClick(view: View?) {
+                        // 3-3. 사용자게에 퍼미션 요청을 합니다. 요청 결과는 onRequestPermissionResult에서 수신됩니다.
+                        ActivityCompat.requestPermissions(this as Activity, Common.MAP_PERMISSIONS, Common.REQ_CODE_MY_PERMISSION_LOCATION_ACCESS_ALL)
+                    }
+                }).show()
+            } else {
+                // 4-1. 사용자가 퍼미션 거부를 한 적이 없는 경우에는 퍼미션 요청을 바로 합니다.
+                // 요청 결과는 onRequestPermissionResult에서 수신됩니다.
+                ActivityCompat.requestPermissions(this, Common.MAP_PERMISSIONS, Common.REQ_CODE_MY_PERMISSION_LOCATION_ACCESS_ALL)
+            }*/
             ActivityCompat.requestPermissions(this as Activity, Common.MAP_PERMISSIONS, Common.REQ_CODE_MY_PERMISSION_LOCATION_ACCESS_ALL)
+        } else {
+            Log.i(Common.MY_TAG, "checkRunTimePermission:: 위치 권한이 있습니다.")
         }
     }
 
@@ -145,6 +189,13 @@ class MainActivity : AppCompatActivity() {
             //MultiSelectListPreference에 Summary 출력위한 함수 호출
             val timeExDayPref: MultiSelectListPreference? = findPreference("timeExDayPref_key")
 
+            if(timeExDayPref?.values?.size == 7) {
+                val serviceControlPref: SwitchPreferenceCompat? = findPreference("service_start_key")
+                if (serviceControlPref != null) {
+                    serviceControlPref.isEnabled = false
+                }
+            }
+
             timeExDayPref?.useSelectionAsSummary()
 
             timeExDayPref?.setOnPreferenceChangeListener { _, newValue ->
@@ -163,6 +214,17 @@ class MainActivity : AppCompatActivity() {
                         str += timeExDayPref?.entries[i]
                     }
                     timeExDayPref?.summary = str
+
+                }
+                val serviceControlPref: SwitchPreferenceCompat? = findPreference("service_start_key")
+                if(newValueSet.size == 7) {
+                    if (serviceControlPref != null) {
+                        serviceControlPref.isEnabled = false
+                    }
+                } else {
+                    if (serviceControlPref != null) {
+                        serviceControlPref.isEnabled = true
+                    }
                 }
 
                 /*if (timeExDayPref?.summary.isEmpty()) {
@@ -188,13 +250,13 @@ class MainActivity : AppCompatActivity() {
             serviceStartPref?.setOnPreferenceClickListener({
                 val myAlarmService = MyAlarmService((activity as MainActivity).applicationContext, (activity as MainActivity).mPref)
                 if(serviceStartPref?.isChecked) {
-                    //(activity as MainActivity).startService(Common.ALARM_REPEAT_MODE)
-                    myAlarmService.startService(Common.ALARM_REPEAT_MODE)
+                    myAlarmService.startAlarmService(Common.ALARM_REPEAT_MODE)
                     setPreferenceEnableDisable(false)
+                    (activity as MainActivity).startRestartService()
                 } else {
-                    //(activity as MainActivity).stopService()
-                    myAlarmService.stopService()
+                    myAlarmService.stopAlarmService()
                     setPreferenceEnableDisable(true)
+                    (activity as MainActivity).stopRestartService()
                 }
 
                 true
